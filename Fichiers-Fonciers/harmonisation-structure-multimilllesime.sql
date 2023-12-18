@@ -27,6 +27,19 @@ SELECT 'DROP SCHEMA '||schema_name||' CASCADE;'
 FROM information_schema.schemata
 WHERE schema_name ILIKE 'ffta_d%14';
 
+--- REPARATION DES GEOMETRIES PONCTUELLES DE LA TABLE DES PARCELLES DU DEPARTEMENT 95 MILLESIME 2016
+--- /!\ Cette étape n'est nécessaire que pour le millésime 2016 et le département 95
+ALTER TABLE ff_2016.d95_2016_pnb10_parcelle
+ADD COLUMN geomloc2 geometry(MultiPoint);
+UPDATE ff_2016.d95_2016_pnb10_parcelle
+SET geomloc2 = ST_Multi(geomloc);
+ALTER TABLE ff_2016.d95_2016_pnb10_parcelle
+DROP COLUMN geomloc;
+ALTER TABLE ff_2016.d95_2016_pnb10_parcelle
+RENAME COLUMN geomloc2 TO geomloc;
+ALTER TABLE ff_2016.d95_2016_pnb10_parcelle
+ALTER COLUMN geomloc TYPE geometry(MultiPoint,2154);
+
 --- STRUCTURATION D'UNE TABLE NATIONALE
 --- Exécuter manuellement les requêtes SQL générées par le code suivant
 SELECT 'CREATE TABLE ff_2014.fftp'||RIGHT(table_name,LENGTH(table_name)-3)||' (LIKE '||table_schema||'.'||table_name||' INCLUDING DEFAULTS);'
