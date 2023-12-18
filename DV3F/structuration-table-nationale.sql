@@ -23,6 +23,7 @@ SELECT 'ALTER TABLE '||table_schema||'.'||table_name||' SET SCHEMA dv3fv7_dep;'
    WHERE table_type = 'BASE TABLE' AND table_schema LIKE 'dvf_d%';
 
 --- SUPPRESSION DES SCHEMAS DEPARTEMENTAUX VIDES
+--- Executer manuellement les requêtes générées par le code ci-dessous
 SELECT 'DROP SCHEMA '||schema_name||' CASCADE;'
 FROM information_schema.schemata
 WHERE schema_name LIKE 'dvf_d%';
