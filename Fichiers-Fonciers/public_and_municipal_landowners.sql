@@ -349,3 +349,27 @@ WHERE public IS TRUE AND cod_prop SIMILAR TO 'A3g|G1a|G1d|G2d|R7a|Z1a';
 UPDATE ff.proprietaires_multimillesime
 SET cominterco = 'True'
 WHERE id = 3683436
+
+
+
+----------------
+---Catégorisation des types de propriétaires communaux
+----------------
+ALTER TABLE ff.proprietaires_multimillesime DROP COLUMN IF EXISTS com_niv;
+ALTER TABLE ff.proprietaires_multimillesime DROP COLUMN IF EXISTS com_niv_libelle;
+ALTER TABLE ff.proprietaires_multimillesime
+ADD COLUMN com_niv int;
+ALTER TABLE ff.proprietaires_multimillesime
+ADD COLUMN com_niv_libelle text;
+
+UPDATE ff.proprietaires_multimillesime
+SET com_niv = 1, com_niv_libelle = 'Propriétaire générique'
+WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'P4a|P5%|P6%';
+
+UPDATE ff.proprietaires_multimillesime
+SET com_niv = 2, com_niv_libelle = 'Propriétaire dédié à la maîtrise foncière'
+WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F2%|F4%';
+
+UPDATE ff.proprietaires_multimillesime
+SET com_niv = 3, com_niv_libelle = 'Propriétaire fléché vers un service'
+WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F1a|P4b|P4c|P4d|R5b|R6a|E3a|L1c|M2a|S1a|S1b|S2b';
