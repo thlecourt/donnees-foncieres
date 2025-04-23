@@ -7,6 +7,8 @@ ALTER TABLE ff.proprietaires_multimillesime
 ADD COLUMN public boolean;
 ALTER TABLE ff.proprietaires_multimillesime
 ADD COLUMN cominterco boolean;
+ALTER TABLE ff.proprietaires_multimillesime
+ADD COLUMN communaux boolean;
 
 
 ---Affectation des cas simples
@@ -17,6 +19,21 @@ WHERE cod_prop SIMILAR TO 'P%|F2%|F4%|F5b|F7a|F7c|F7g|A1g|A2c|A3%|A4%|R2%|R4%|R5
 UPDATE ff.proprietaires_multimillesime
 SET cominterco = 'True'
 WHERE cod_prop SIMILAR TO 'P4%|P5%|P6%|F2%|F4%|F5b|S2b|L1c';
+
+
+---Affectation des propriétaires de communaux
+UPDATE ff.proprietaires_multimillesime
+SET public = 'True,
+	cominterco = 'True',
+	communaux = 'True'
+WHERE (cod_prop NOT SIMILAR TO 'P1%|P6b|F1%|F2%|F5%|F6%|F7%|L%|R%|E%|S%|Z%'
+	AND SPLIT_PART(nom_adresse,'|',1) SIMILAR TO '%BOURGEOISI%|% BOURGEOISE%|% SECTION %|SECTION %|% SECTION|SECTION|CONCORT %|
+	% CONCORT %|% CONCORT|%CONSORTERI%|% CULTIF%|%PATECQ%|% PATUS %|PATUS %|% PATUS|PATUS|%QUEREUX%|
+	%QUAIREU%|%QUERU %|QUERU %|% QUERU %|QUERU|% QUERU|%CARROUE%|%QUEIRIAU%|RAPE %|% RAPE %|% RAPE|RAPE|
+	%FOND DE VACHE%|%CAYOLAR%|%USAGERE%|ASSEC|ASSEC %|% ASSEC|% ASSEC %|%VAINE PATURE%|%HABITANT%')
+OR (cod_prop SIMILAR TO 'A1%|A2%|G2%' AND SPLIT_PART(nom_adresse,'|',1) SIMILAR TO 'COMMUNE %|
+	% COMMUNE %|% COMMUNE|% COMMUNAL %|% COMMUNAL|COMMUNAL|COMMUNAL %|% COMMUNAUX%|COMMUNAUX%|
+	COMMUNAUX'));
 
 
 
@@ -373,3 +390,7 @@ WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F2%|F4%';
 UPDATE ff.proprietaires_multimillesime
 SET com_niv = 3, com_niv_libelle = 'Propriétaire fléché vers un service'
 WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F1a|P4b|P4c|P4d|R5b|R6a|E3a|L1c|M2a|S1a|S1b|S2b';
+
+UPDATE ff.proprietaires_multimillesime
+SET com_niv = 4, com_niv_libelle = 'Propriétaire de communal'
+WHERE communaux IS TRUE
