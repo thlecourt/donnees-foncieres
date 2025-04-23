@@ -1,5 +1,5 @@
 --------------------------------
-Ce script identifie les propriétaires publics et communaux à partir des Fichiers Fonciers et de données exogènes, et notamment de la base SIRENE (INSEE)
+Ce script identifie les propriétaires publics et communaux, dont les propriétaires de communaux, à partir des Fichiers Fonciers et de données exogènes, et notamment de la base SIRENE (INSEE)
 --------------------------------
 
 ---Création des colonnes de qualification
