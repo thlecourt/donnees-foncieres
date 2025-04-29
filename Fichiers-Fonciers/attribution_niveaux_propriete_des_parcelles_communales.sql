@@ -4,7 +4,6 @@ DECLARE
 	millesime text;
 	millesime_short text;
 	table_name text;
-	table_communaux text;
 BEGIN
 	RAISE NOTICE 'Traitement multi-millésime pour affectation des propriétaires (inter)communaux démarré';
 	FOREACH millesime IN ARRAY ARRAY['2009','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','2021']
@@ -12,7 +11,6 @@ BEGIN
 		RAISE NOTICE 'Traitement du millésime % en cours',millesime;
 		millesime_short = RIGHT(millesime,2);
 		table_name = 'public'||millesime_short;
-		table_communaux = 'com'||millesime_short;
 
 		RAISE NOTICE 'identification des parcelles communales';
 
