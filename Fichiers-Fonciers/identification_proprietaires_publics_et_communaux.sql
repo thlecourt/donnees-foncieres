@@ -404,5 +404,5 @@ SET com_niv = 6, com_niv_libelle = 'Propriétaire orienté services - HLM'
 WHERE cominterco IS TRUE AND cod_prop LIKE 'F1a';
 
 UPDATE prop_mm.proprio_final_m2021_work
-SET com_niv = 8, com_niv_libelle = 'Propriétaire de communal'
+SET com_niv = 7, com_niv_libelle = 'Propriétaire de communal'
 WHERE communaux IS TRUE;
