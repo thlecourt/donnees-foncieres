@@ -372,28 +372,37 @@ WHERE id = 3683436;
 ----------------
 ---Catégorisation des types de propriétaires communaux
 ----------------
-ALTER TABLE ff.proprietaires_multimillesime DROP COLUMN IF EXISTS com_niv;
-ALTER TABLE ff.proprietaires_multimillesime DROP COLUMN IF EXISTS com_niv_libelle;
-ALTER TABLE ff.proprietaires_multimillesime
+ALTER TABLE prop_mm.proprio_final_m2021_work DROP COLUMN IF EXISTS com_niv;
+ALTER TABLE prop_mm.proprio_final_m2021_work DROP COLUMN IF EXISTS com_niv_libelle;
+ALTER TABLE prop_mm.proprio_final_m2021_work
 ADD COLUMN com_niv int;
-ALTER TABLE ff.proprietaires_multimillesime
+ALTER TABLE prop_mm.proprio_final_m2021_work
 ADD COLUMN com_niv_libelle text;
+
 UPDATE prop_mm.proprio_final_m2021_work
-SET com_niv = 1, com_niv_libelle = 'Propriétaire générique communal'
+SET com_niv = 1, com_niv_libelle = 'Propriétaire générique - communal'
 WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'P5%|P6%';
 
-UPDATE ff.proprietaires_multimillesime
-SET com_niv = 2, com_niv_libelle = 'Propriétaire générique intercommunal'
-WHERE cominterco IS TRUE AND cod_prop LIKE 'P4a';
+UPDATE prop_mm.proprio_final_m2021_work
+SET com_niv = 2, com_niv_libelle = 'Propriétaire générique - intercommunal'
+WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'P4a';
 
-UPDATE ff.proprietaires_multimillesime
-SET com_niv = 3, com_niv_libelle = 'Propriétaire délégué à la maîtrise foncière'
-WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F2%|F4%';
+UPDATE prop_mm.proprio_final_m2021_work
+SET com_niv = 3, com_niv_libelle = 'Propriétaire délégué à la maitrise foncière - aménagement'
+WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F4%';
 
-UPDATE ff.proprietaires_multimillesime
-SET com_niv = 4, com_niv_libelle = 'Propriétaire orienté services'
-WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F1a|P4b|P4c|P4d|R5b|R6a|E3a|L1c|M2a|S1a|S1b|S2b';
+UPDATE prop_mm.proprio_final_m2021_work
+SET com_niv = 4, com_niv_libelle = 'Propriétaire délégué à la maitrise foncière - portage'
+WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F2%';
 
-UPDATE ff.proprietaires_multimillesime
-SET com_niv = 5, com_niv_libelle = 'Propriétaire de communal'
-WHERE communaux IS TRUE
+UPDATE prop_mm.proprio_final_m2021_work
+SET com_niv = 5, com_niv_libelle = 'Propriétaire orienté services - divers'
+WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'P4b|P4c|P4d|R5b|R6a|E3a|L1c|M2a|S1a|S1b|S2b';
+
+UPDATE prop_mm.proprio_final_m2021_work
+SET com_niv = 6, com_niv_libelle = 'Propriétaire orienté services - HLM'
+WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F1a';
+
+UPDATE prop_mm.proprio_final_m2021_work
+SET com_niv = 8, com_niv_libelle = 'Propriétaire de communal'
+WHERE communaux IS TRUE;
