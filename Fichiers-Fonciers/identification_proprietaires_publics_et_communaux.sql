@@ -1,5 +1,5 @@
 --------------------------------
-Ce script identifie les propriétaires publics et communaux, dont les propriétaires de communaux, à partir des Fichiers Fonciers et de données exogènes, et notamment de la base SIRENE (INSEE)
+---Ce script identifie les propriétaires publics et communaux, dont les propriétaires de communaux, à partir des Fichiers Fonciers et de données exogènes, et notamment de la base SIRENE (INSEE)
 --------------------------------
 
 ---Création des colonnes de qualification
@@ -23,7 +23,7 @@ WHERE cod_prop SIMILAR TO 'P4%|P5%|P6%|F2%|F4%|F5b|S2b|L1c';
 
 ---Affectation des propriétaires de communaux
 UPDATE ff.proprietaires_multimillesime
-SET public = 'True,
+SET public = 'True',
 	cominterco = 'True',
 	communaux = 'True'
 WHERE (cod_prop NOT SIMILAR TO 'P1%|P6b|F1%|F2%|F5%|F6%|F7%|L%|R%|E%|S%|Z%'
@@ -33,7 +33,7 @@ WHERE (cod_prop NOT SIMILAR TO 'P1%|P6b|F1%|F2%|F5%|F6%|F7%|L%|R%|E%|S%|Z%'
 	%FOND DE VACHE%|%CAYOLAR%|%USAGERE%|ASSEC|ASSEC %|% ASSEC|% ASSEC %|%VAINE PATURE%|%HABITANT%')
 OR (cod_prop SIMILAR TO 'A1%|A2%|G2%' AND SPLIT_PART(nom_adresse,'|',1) SIMILAR TO 'COMMUNE %|
 	% COMMUNE %|% COMMUNE|% COMMUNAL %|% COMMUNAL|COMMUNAL|COMMUNAL %|% COMMUNAUX%|COMMUNAUX%|
-	COMMUNAUX'));
+	COMMUNAUX');
 
 
 
@@ -357,7 +357,7 @@ WHERE cominterco IS TRUE AND cod_prop LIKE 'M2a' AND idu SIMILAR TO '3405037';
 
 UPDATE ff.proprietaires_multimillesime
 SET cod_prop = 'P5a'
-WHERE cod_prop LIKE 'G2d' AND idu LIKE '358638'
+WHERE cod_prop LIKE 'G2d' AND idu LIKE '358638';
 
 UPDATE ff.proprietaires_multimillesime
 SET public = 'False', cominterco = 'False'
@@ -365,7 +365,7 @@ WHERE public IS TRUE AND cod_prop SIMILAR TO 'A3g|G1a|G1d|G2d|R7a|Z1a';
 
 UPDATE ff.proprietaires_multimillesime
 SET cominterco = 'True'
-WHERE id = 3683436
+WHERE id = 3683436;
 
 
 
@@ -384,11 +384,11 @@ SET com_niv = 1, com_niv_libelle = 'Propriétaire générique'
 WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'P4a|P5%|P6%';
 
 UPDATE ff.proprietaires_multimillesime
-SET com_niv = 2, com_niv_libelle = 'Propriétaire dédié à la maîtrise foncière'
+SET com_niv = 2, com_niv_libelle = 'Propriétaire délégué à la maîtrise foncière'
 WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F2%|F4%';
 
 UPDATE ff.proprietaires_multimillesime
-SET com_niv = 3, com_niv_libelle = 'Propriétaire fléché vers un service'
+SET com_niv = 3, com_niv_libelle = 'Propriétaire orienté services'
 WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F1a|P4b|P4c|P4d|R5b|R6a|E3a|L1c|M2a|S1a|S1b|S2b';
 
 UPDATE ff.proprietaires_multimillesime
