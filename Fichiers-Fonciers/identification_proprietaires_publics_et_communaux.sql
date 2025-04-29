@@ -378,19 +378,22 @@ ALTER TABLE ff.proprietaires_multimillesime
 ADD COLUMN com_niv int;
 ALTER TABLE ff.proprietaires_multimillesime
 ADD COLUMN com_niv_libelle text;
+UPDATE prop_mm.proprio_final_m2021_work
+SET com_niv = 1, com_niv_libelle = 'Propriétaire générique communal'
+WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'P5%|P6%';
 
 UPDATE ff.proprietaires_multimillesime
-SET com_niv = 1, com_niv_libelle = 'Propriétaire générique'
-WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'P4a|P5%|P6%';
+SET com_niv = 2, com_niv_libelle = 'Propriétaire générique intercommunal'
+WHERE cominterco IS TRUE AND cod_prop LIKE 'P4a';
 
 UPDATE ff.proprietaires_multimillesime
-SET com_niv = 2, com_niv_libelle = 'Propriétaire délégué à la maîtrise foncière'
+SET com_niv = 3, com_niv_libelle = 'Propriétaire délégué à la maîtrise foncière'
 WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F2%|F4%';
 
 UPDATE ff.proprietaires_multimillesime
-SET com_niv = 3, com_niv_libelle = 'Propriétaire orienté services'
+SET com_niv = 4, com_niv_libelle = 'Propriétaire orienté services'
 WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F1a|P4b|P4c|P4d|R5b|R6a|E3a|L1c|M2a|S1a|S1b|S2b';
 
 UPDATE ff.proprietaires_multimillesime
-SET com_niv = 4, com_niv_libelle = 'Propriétaire de communal'
+SET com_niv = 5, com_niv_libelle = 'Propriétaire de communal'
 WHERE communaux IS TRUE
