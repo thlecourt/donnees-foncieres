@@ -381,19 +381,19 @@ ADD COLUMN com_niv_libelle text;
 
 UPDATE prop_mm.proprio_final_m2021_work
 SET com_niv = 1, com_niv_libelle = 'Propriétaire générique - communal'
-WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'P5%|P6%';
+WHERE cominterco IS TRUE AND (cod_prop LIKE 'P5%' OR cod_prop LIKE 'P6%');
 
 UPDATE prop_mm.proprio_final_m2021_work
 SET com_niv = 2, com_niv_libelle = 'Propriétaire générique - intercommunal'
-WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'P4a';
+WHERE cominterco IS TRUE AND cod_prop LIKE 'P4a';
 
 UPDATE prop_mm.proprio_final_m2021_work
 SET com_niv = 3, com_niv_libelle = 'Propriétaire délégué à la maitrise foncière - aménagement'
-WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F4%';
+WHERE cominterco IS TRUE AND cod_prop LIKE 'F4%';
 
 UPDATE prop_mm.proprio_final_m2021_work
 SET com_niv = 4, com_niv_libelle = 'Propriétaire délégué à la maitrise foncière - portage'
-WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F2%';
+WHERE cominterco IS TRUE AND cod_prop LIKE 'F2%';
 
 UPDATE prop_mm.proprio_final_m2021_work
 SET com_niv = 5, com_niv_libelle = 'Propriétaire orienté services - divers'
@@ -401,7 +401,7 @@ WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'P4b|P4c|P4d|R5b|R6a|E3a|L1c|M2
 
 UPDATE prop_mm.proprio_final_m2021_work
 SET com_niv = 6, com_niv_libelle = 'Propriétaire orienté services - HLM'
-WHERE cominterco IS TRUE AND cod_prop SIMILAR TO 'F1a';
+WHERE cominterco IS TRUE AND cod_prop LIKE 'F1a';
 
 UPDATE prop_mm.proprio_final_m2021_work
 SET com_niv = 8, com_niv_libelle = 'Propriétaire de communal'
