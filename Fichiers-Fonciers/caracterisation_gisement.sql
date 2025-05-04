@@ -413,7 +413,7 @@ LOOP
 					FROM bdnb_2024_10_a_open_data.batiment_groupe bat
 					WHERE bat.contient_fictive_geom_groupe IS FALSE
 						AND ST_Dwithin(COALESCE(par.lastgeompar_v,par.lastgeompoint_v), bat.geom_groupe, 1000));---Si pas de géométrie surface, alors prendre la géométrie ponctuelle
-						---pas de critère de date du bâtiment --> tous les bâtiments en 2021, pour prendre en compte les réserves foncières éloignées
+						---pas de critère de date du bâtiment --> tous les bâtiments en 2024, pour prendre en compte les réserves foncières éloignées
 			$$,
 			table_cominterco
 			);
