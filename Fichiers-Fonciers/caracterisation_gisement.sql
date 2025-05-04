@@ -400,7 +400,7 @@ LOOP
 		COMMIT;
 		
 		---Attribution par distance au bâti
-		RAISE NOTICE 'attribution par distance au bâti (polygones)';
+		RAISE NOTICE 'attribution par distance au bâti';
 		EXECUTE format(
 			$$
 			UPDATE nat.%1$I par
