@@ -87,9 +87,9 @@ LOOP
        		table_cominterco := 'public'||millesime_short||'_'||dep;
        		
        		IF millesime::int <= 2017 THEN
-			table_dep_local := 'd'||dep||'_'||millesime||'_pb0010_local';
+			table_dep_local := 'd'||LOWER(dep)||'_'||millesime||'_pb0010_local';
 		ELSE
-			table_dep_local := 'd'||dep||'_fftp_'||millesime||'_pb0010_local';
+			table_dep_local := 'd'||LOWER(dep)||'_fftp_'||millesime||'_pb0010_local';
 		END IF;
 				
 
