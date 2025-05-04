@@ -28,8 +28,10 @@ DECLARE
 	
 BEGIN
 
-
-FOREACH millesime IN ARRAY ARRAY['2009','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','2021']
+FOREACH millesime IN ARRAY ARRAY['2021']
+--FOREACH millesime IN ARRAY ARRAY['2009','2011','2012','2013']
+--FOREACH millesime IN ARRAY ARRAY['2014','2015','2016']
+--FOREACH millesime IN ARRAY ARRAY['2017','2018','2019','2020']
 
 LOOP
         RAISE NOTICE 'Traitement du millésime % en cours',millesime;
@@ -46,49 +48,11 @@ LOOP
 	ELSE
 		surface_batiment := 'slocal';
 	END IF;
-	
-	
-	RAISE NOTICE 'Suppression-création des colonnes et indexes';
-			     
-	EXECUTE format(
-		$$
-		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS lastgeompar_nobat CASCADE;
-		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS lastgeompar_v CASCADE;
-		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS lastgeompoint_v CASCADE;
-		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS support_bati CASCADE;
-		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS support_eau CASCADE;
-		ALTER TABLE nat.%1$I ADD COLUMN lastgeompar_nobat geometry;
-		ALTER TABLE nat.%1$I ADD COLUMN lastgeompar_v geometry;
-		ALTER TABLE nat.%1$I ADD COLUMN lastgeompoint_v geometry;
-		ALTER TABLE nat.%1$I ADD COLUMN support_bati bool;
-		ALTER TABLE nat.%1$I ADD COLUMN support_eau bool;
-		
-		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS typpat CASCADE;
-		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS scorpat CASCADE;
-		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS nature CASCADE;
-		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS area CASCADE;
-		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS indice_i CASCADE;
-		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS indice_miller CASCADE;
-		ALTER TABLE nat.%1$I ADD COLUMN typpat text;
-		ALTER TABLE nat.%1$I ADD COLUMN scorpat int;
-		ALTER TABLE nat.%1$I ADD COLUMN nature text;
-		ALTER TABLE nat.%1$I ADD COLUMN area numeric;
-		ALTER TABLE nat.%1$I ADD COLUMN indice_i numeric;
-		ALTER TABLE nat.%1$I ADD COLUMN indice_miller numeric;
-		
-		CREATE INDEX %2$I ON nat.%1$I(scorpat);
-		CREATE INDEX %3$I ON nat.%1$I USING gist(lastgeompar_v);
-		CREATE INDEX %4$I ON nat.%1$I USING gist(lastgeompoint_v);
-		$$,
-		table_cominterco_nat,
-		index_scorpat,
-		index_lastgeompar_v,
-		index_lastgeompoint_v
-		);
-	COMMIT;
-        
+	        
 	FOR dep IN EXECUTE 'SELECT ccodep FROM nat.' || table_cominterco_nat || ' GROUP BY ccodep ORDER BY ccodep'		
 	LOOP
+	
+		IF LOWER(dep) NOT LIKE '2a' AND LOWER(dep) NOT LIKE '2b' AND dep::int >= 67 THEN
 	
        		RAISE NOTICE 'Département %',dep;
        		
@@ -456,7 +420,7 @@ LOOP
 		RAISE NOTICE 'attribution de la voirie';
 		EXECUTE format(
 			$$
-			CREATE SCHEMA temp IF NOT EXISTS;
+			CREATE SCHEMA IF NOT EXISTS temp;
 
 			---Extraction des voiries pertinentes dans le département
 			DROP TABLE IF EXISTS temp.%2$I CASCADE;
@@ -504,7 +468,7 @@ LOOP
 				  SELECT 
 				   	geom_buffer, 
 				    ST_ClusterDBSCAN(geom_buffer, 0, 1) OVER() AS cluster_id 
-				  FROM temp.troncon_route_local
+				  FROM temp.%2$I
 				) AS clusters 
 				GROUP BY cluster_id
 				);
@@ -709,7 +673,7 @@ LOOP
 			table_cominterco
 			);
 		COMMIT;
-	
+	END IF;
 	END LOOP;
 END LOOP;
 
@@ -718,4 +682,3 @@ RAISE NOTICE 'Tous les millésimes ont été traités';
 END
 
 $do$
-
