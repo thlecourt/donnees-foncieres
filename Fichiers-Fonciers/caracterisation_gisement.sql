@@ -147,7 +147,7 @@ LOOP
 					WHEN a.dcntpa - b.emprises_s <= 0 THEN 'Parcelle non vectorisée complètement bâtie'
 				END,
 				area = CASE
-					WHEN a.dcntpa - b.emprises_s <= 0 THEN 0
+					WHEN a.dcntpa - b.emprises_s <= 0 THEN dcntpa
 					ELSE a.dcntpa - b.emprises_s
 				END
 			FROM sub2 b
