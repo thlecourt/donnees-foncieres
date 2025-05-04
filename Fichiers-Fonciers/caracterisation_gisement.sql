@@ -17,6 +17,14 @@ DECLARE
 	surface_batiment text;
 	schema_ff_dep text;
 	table_dep_local text;
+	cominterco_superpose_todelete text;
+	temp_cominterco_superpose_todelete_idx text;
+	troncon_route_local text;
+	temp_troncon_route_local_geom_idx text;
+	route_local text;
+	temp_route_local_geom_idx text;
+	route_local_cut text;
+	temp_route_local_cut_geom_idx text;
 	
 BEGIN
 
@@ -85,6 +93,14 @@ LOOP
        		RAISE NOTICE 'Département %',dep;
        		
        		table_cominterco := 'public'||millesime_short||'_'||dep;
+       		cominterco_superpose_todelete := 'todelete'||millesime_short||'_'||dep;
+       		temp_cominterco_superpose_todelete_idx := 'temp_'||cominterco_superpose_todelete||'_idx';
+       		troncon_route_local := 'troncons_routes'||millesime_short||'_'||dep;
+       		temp_troncon_route_local_geom_idx := 'temp_'||troncon_route_local||'_idx';
+       		route_local := 'routes'||millesime_short||'_'||dep;
+       		temp_route_local_geom_idx := 'temp_'||route_local||'_idx';
+       		route_local_cut := 'routes_cut'||millesime_short||'_'||dep;
+       		temp_route_local_cut_geom_idx := 'temp_'||route_local_cut||'_idx';
        		
        		IF millesime::int <= 2017 THEN
 			table_dep_local := 'd'||LOWER(dep)||'_'||millesime||'_pb0010_local';
@@ -166,8 +182,8 @@ LOOP
 			$$
 			CREATE SCHEMA IF NOT EXISTS temp;
 			
-			DROP TABLE IF EXISTS temp.cominterco_superpose_todelete CASCADE;
-			CREATE TABLE temp.cominterco_superpose_todelete AS (
+			DROP TABLE IF EXISTS temp.%2$I CASCADE;
+			CREATE TABLE temp.%2$I AS (
 				SELECT DISTINCT b.ccodep,b.idpar
 				FROM nat.%1$I a, nat.%1$I b
 				WHERE a.cominterco IS TRUE
@@ -182,7 +198,7 @@ LOOP
 					);
 			
 			---Insert des parcelles avec géométrie ponctuelle uniquement, intersectant un polygone
-			INSERT INTO temp.cominterco_superpose_todelete
+			INSERT INTO temp.%2$I
 			SELECT DISTINCT a.ccodep,a.idpar
 			FROM nat.%1$I a, nat.%1$I b
 			WHERE a.cominterco IS TRUE
@@ -194,19 +210,21 @@ LOOP
 				AND a.idpk > b.idpk
 				AND ST_Within(a.geomloc,b.lastgeompar);
 				
-			CREATE INDEX temp_cominterco_superpose_todelete_idx ON temp.cominterco_superpose_todelete(ccodep,idpar);
+			CREATE INDEX %3$I ON temp.%2$I(ccodep,idpar);
 
 			UPDATE nat.%1$I a
 			SET scorpat = 0,
 				typpat = 'Anomalie géométrique',
 				nature = 'En superposition'
-			FROM temp.cominterco_superpose_todelete b
+			FROM temp.%2$I b
 			WHERE a.ccodep = b.ccodep
 				AND a.idpar = b.idpar;
 
-			DROP TABLE temp.cominterco_superpose_todelete CASCADE;
+			DROP TABLE temp.%2$I CASCADE;
 			$$,
-			table_cominterco);
+			table_cominterco,
+			cominterco_superpose_todelete,
+			temp_cominterco_superpose_todelete_idx);
 		COMMIT;
 
 
@@ -438,12 +456,11 @@ LOOP
 		RAISE NOTICE 'attribution de la voirie';
 		EXECUTE format(
 			$$
-			DROP SCHEMA IF EXISTS temp CASCADE;
-			CREATE SCHEMA temp;
+			CREATE SCHEMA temp IF NOT EXISTS;
 
 			---Extraction des voiries pertinentes dans le département
-			DROP TABLE IF EXISTS temp.troncon_route_local CASCADE;
-			CREATE TABLE temp.troncon_route_local AS(
+			DROP TABLE IF EXISTS temp.%2$I CASCADE;
+			CREATE TABLE temp.%2$I AS(
 				SELECT
 				  l.cleabs,
 				  l.nature,
@@ -465,22 +482,22 @@ LOOP
 				);
 
 			--- Création des largeurs de voirie
-			ALTER TABLE temp.troncon_route_local ADD COLUMN geom_buffer geometry;
+			ALTER TABLE temp.%2$I ADD COLUMN geom_buffer geometry;
 
-			UPDATE temp.troncon_route_local
+			UPDATE temp.%2$I
 			SET geom_buffer = ST_MakeValid(ST_Buffer(geom_intersect,largeur_de_chaussee));
 
-			UPDATE temp.troncon_route_local l
+			UPDATE temp.%2$I l
 			SET geom_buffer = ST_MakeValid(ST_Buffer(l.geom_intersect,lrs.largeur_total))
 			FROM ign_topo.largeur_routes_simplifiee lrs
 			WHERE (l.largeur_de_chaussee IS NULL OR l.largeur_de_chaussee <= 0)
 				AND l.nature = lrs.nature
 				AND COALESCE(l.nombre_de_voies,0) = lrs.nb_voies;
 				
-			CREATE INDEX temp_troncon_route_local_geom_idx ON temp.troncon_route_local USING gist(geom_buffer);
+			CREATE INDEX %3$I ON temp.%2$I USING gist(geom_buffer);
 
 			---Fusion des tronçons qui s'intersectent
-			CREATE TABLE temp.routes_locales AS (
+			CREATE TABLE temp.%4$I AS (
 				SELECT 
 				  ST_Union(geom_buffer) AS geom 
 				FROM (
@@ -491,33 +508,40 @@ LOOP
 				) AS clusters 
 				GROUP BY cluster_id
 				);
-			CREATE INDEX temp_routes_locales_geom_idx ON temp.routes_locales USING gist(geom);
-			DROP TABLE IF EXISTS temp.troncon_route_local CASCADE;
+			CREATE INDEX %5$I ON temp.%4$I USING gist(geom);
+			DROP TABLE temp.%2$I CASCADE;
 
 			---Découpage des tronçons de voirie par parcelle
-			CREATE TABLE temp.routes_locales_cut AS (
+			CREATE TABLE temp.%6$I AS (
 				SELECT par.idpar,
 					ST_Collect(ST_Intersection(r.geom, par.lastgeompar_v)) geom_r
-				FROM temp.routes_locales r, nat.%1$I par
+				FROM temp.%4$I r, nat.%1$I par
 				WHERE par.cominterco IS TRUE
 					AND ST_Intersects(r.geom, par.lastgeompar_v)
 				GROUP BY par.idpar
 			);
-			CREATE INDEX temp_routes_locales_cut_geom_idx ON temp.routes_locales_cut USING gist(geom_r);
-			DROP TABLE IF EXISTS temp.routes_locales CASCADE;
+			CREATE INDEX %7$I ON temp.%6$I USING gist(geom_r);
+			DROP TABLE temp.%4$I CASCADE;
 
 			---Qualification des parcelles municipales composées à + de 33%% de voirie
 			UPDATE nat.%1$I par
 			SET scorpat = 2,
 				typpat = 'Transport',
 				nature = 'Voirie'
-			FROM temp.routes_locales_cut r
+			FROM temp.%6$I r
 			WHERE ST_Intersects(r.geom_r,par.lastgeompar_v)
 				AND ST_Area(ST_Intersection(r.geom_r,par.lastgeompar_v)) > par.area*0.33;
 				
-			DROP SCHEMA temp CASCADE;
+			DROP TABLE temp.%6$I CASCADE;
 			$$,
-			table_cominterco);
+			table_cominterco,
+			troncon_route_local,
+       			temp_troncon_route_local_geom_idx,
+       			route_local,
+       			temp_route_local_geom_idx,
+       			route_local_cut,
+       			temp_route_local_cut_geom_idx);
+       			
 			
 		COMMIT;
 		
@@ -694,3 +718,4 @@ RAISE NOTICE 'Tous les millésimes ont été traités';
 END
 
 $do$
+
