@@ -141,7 +141,7 @@ LOOP
 					WHEN a.dcntpa - b.emprises_s <= 0 THEN 0
 				END,
 				typpat = CASE
-					WHEN a.dcntpa - b.emprises_s <= 0 THEN 'Espace bâti'
+					WHEN a.dcntpa - b.emprises_s <= 0 THEN 'Parcelle complètement bâtie'
 				END,
 				nature = CASE
 					WHEN a.dcntpa - b.emprises_s <= 0 THEN 'Parcelle non vectorisée complètement bâtie'
@@ -234,7 +234,7 @@ LOOP
 			
 			UPDATE nat.%1$I
 			SET scorpat = 0,
-				typpat = 'Espace bâti',
+				typpat = 'Parcelle complètement bâtie',
 				nature = 'Parcelle vectorisée complètement bâtie',
 				area = ST_Area(lastgeompar)
 			WHERE cominterco IS TRUE
