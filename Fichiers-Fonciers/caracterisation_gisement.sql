@@ -14,6 +14,9 @@ DECLARE
 	index_scorpat text;
 	index_lastgeompar_v text;
 	index_lastgeompoint_v text;
+	surface_batiment text;
+	schema_ff_dep text;
+	table_dep_local text;
 	
 BEGIN
 
@@ -28,6 +31,14 @@ LOOP
         index_scorpat := 'nat_'||table_cominterco_nat||'_scorpat_idx';
 	index_lastgeompar_v := 'nat_'||table_cominterco_nat||'_lastgeompar_v_idx';
 	index_lastgeompoint_v := 'nat_'||table_cominterco_nat||'_lastgeompoint_v_idx';
+	schema_ff_dep := 'ff_'||millesime||'_dep';
+		
+	IF millesime::int <= 2017 THEN
+		surface_batiment := 'spevtot';
+	ELSE
+		surface_batiment := 'slocal';
+	END IF;
+	
 	
 	RAISE NOTICE 'Suppression-création des colonnes et indexes';
 			     
@@ -74,23 +85,13 @@ LOOP
        		RAISE NOTICE 'Département %',dep;
        		
        		table_cominterco := 'public'||millesime_short||'_'||dep;
-			
-			
-		---Suppression des parcelles sans géométrie valide déclarées comme bâties
-		RAISE NOTICE 'Parcelles sans géométrie mais bâties';
-		EXECUTE format(
-			$$
-			UPDATE nat.%1$I
-			SET scorpat = 0,
-				typpat = 'Espace bâti',
-				nature = 'Sans géométrie surfacique'
-			WHERE cominterco IS TRUE
-				AND geomok IS FALSE
-				AND nbat > 0
-			$$,
-			table_cominterco);
-		COMMIT;
-
+       		
+       		IF millesime::int <= 2017 THEN
+			table_dep_local := 'd'||dep||'_'||millesime||'_pb0010_local';
+		ELSE
+			table_dep_local := 'd'||dep||'_fftp_'||millesime||'_pb0010_local';
+		END IF;
+				
 
 		---Parcelles hors terre ferme
 		RAISE NOTICE 'Parcelles hors terre ferme';
@@ -101,8 +102,7 @@ LOOP
 				typpat = 'Anomalie géométrique',
 				nature = 'Hors terre ferme'
 			WHERE cominterco IS TRUE
-				AND scorpat IS NULL
-				AND geomok IS TRUE
+				AND geomloc IS NOT NULL
 				AND idpar NOT IN
 					(SELECT idpar
 					FROM nat.%1$I a
@@ -111,7 +111,55 @@ LOOP
 			$$,
 			table_cominterco);
 		COMMIT;
+		
+		
+		---Traitement des parcelles bâties mais non vectorisées
+		RAISE NOTICE 'Parcelles bâties mais non vectorisées';
+		EXECUTE format(
+			$$
+			WITH sub AS (
+				SELECT a.idpar, a.idbat, SUM(a.%1$s/
+					CASE
+						WHEN a.dnbniv::int <= 0 OR a.dnbniv::int IS NULL THEN 1
+						ELSE a.dnbniv::int
+					END) surface_emprise_batiment
+				FROM %2$I.%3$I a
+				JOIN nat.%4$I b ON a.idpar = b.idpar
+				WHERE b.cominterco IS TRUE
+					AND b.scorpat IS NULL
+					AND b.geomok IS FALSE
+					AND b.nbat > 0
+				GROUP BY a.idpar, a.idbat),
 
+			sub2 AS (
+				SELECT idpar, SUM(surface_emprise_batiment) emprises_s
+				FROM sub
+				GROUP BY idpar)
+
+			UPDATE nat.%4$I a
+			SET scorpat = CASE
+					WHEN a.dcntpa - b.emprises_s <= 0 THEN 0
+				END,
+				typpat = CASE
+					WHEN a.dcntpa - b.emprises_s <= 0 THEN 'Espace bâti'
+				END,
+				nature = CASE
+					WHEN a.dcntpa - b.emprises_s <= 0 THEN 'Parcelle non vectorisée complètement bâtie'
+				END,
+				area = CASE
+					WHEN a.dcntpa - b.emprises_s <= 0 THEN 0
+					ELSE a.dcntpa - b.emprises_s
+				END
+			FROM sub2 b
+			WHERE a.idpar = b.idpar
+			$$,
+			surface_batiment,
+			schema_ff_dep,
+			table_dep_local,
+			table_cominterco);
+		COMMIT;
+		
+		
 		---Plus petites parcelles en superposition
 		RAISE NOTICE 'Plus petites parcelles en superposition';
 		EXECUTE format(
@@ -162,8 +210,8 @@ LOOP
 		COMMIT;
 
 
-		---Soustraction des espaces bâtis
-		RAISE NOTICE 'Soustraction des espaces bâtis';
+		---Soustraction des espaces bâtis des parcelles vectorisées
+		RAISE NOTICE 'Soustraction des espaces bâtis des parcelles vectorisées';
 		EXECUTE format(
 			$$
 			WITH sub AS (
@@ -187,7 +235,7 @@ LOOP
 			UPDATE nat.%1$I
 			SET scorpat = 0,
 				typpat = 'Espace bâti',
-				nature = 'Parcelle complètement bâtie',
+				nature = 'Parcelle vectorisée complètement bâtie',
 				area = ST_Area(lastgeompar)
 			WHERE cominterco IS TRUE
 				AND support_bati IS TRUE
@@ -248,6 +296,7 @@ LOOP
 			);
 		COMMIT;
 		
+		
 		---dilatation-erosion et simplification
 		RAISE NOTICE 'dilatation-erosion et simplification des géométries';
 		EXECUTE format(
@@ -272,6 +321,7 @@ LOOP
 			);
 		COMMIT;
 		
+		
 		---centroide et recalcul des surfaces
 		RAISE NOTICE 'centroide et recalcul des surfaces';
 		EXECUTE format(
@@ -282,10 +332,10 @@ LOOP
 					ELSE ST_PointOnSurface(lastgeompar_v)
 					END,
 				area = CASE
-					WHEN (support_bati IS TRUE OR support_eau IS TRUE)
-						AND area IS NOT NULL
+					WHEN area IS NOT NULL
 						THEN area
-					WHEN support_bati IS TRUE OR support_eau IS TRUE
+					WHEN area IS NULL
+						AND (support_bati IS TRUE OR support_eau IS TRUE)
 						THEN ST_Area(lastgeompar_v)
 					ELSE dcntpa
 					END
@@ -294,6 +344,8 @@ LOOP
 			table_cominterco
 			);
 		COMMIT;
+		
+	
 			
 		---Analyse morphologique
 		RAISE NOTICE 'analyse morphologique';
@@ -329,11 +381,11 @@ LOOP
 					ELSE 'Contrainte géographique'
 					END,
 				nature = CASE
-					WHEN area < 200 THEN 'Surface < 200 m2'
-					WHEN indice_miller < 0.3 AND indice_i < 2 THEN 'Scorie type 1'
-					WHEN indice_miller < 0.1 AND indice_i < 5 THEN 'Scorie type 2'
 					WHEN schemrem > dcntpa*0.66 THEN 'Chemin de remembrement'
 					WHEN pente_pc_mean > 15.71 THEN 'Pente forte'---seules 10%% de parcelles sont bâties sur des pentes supérieures
+					WHEN indice_miller < 0.1 AND indice_i < 5 THEN 'Scorie type 2'
+					WHEN indice_miller < 0.3 AND indice_i < 2 THEN 'Scorie type 1'
+					WHEN area < 200 THEN 'Surface < 200 m2'
 				END
 			WHERE cominterco IS TRUE
 				AND scorpat IS NULL
@@ -348,23 +400,25 @@ LOOP
 		COMMIT;
 		
 		---Attribution par distance au bâti
-		RAISE NOTICE 'attribution par distance au bâti';
+		RAISE NOTICE 'attribution par distance au bâti (polygones)';
 		EXECUTE format(
 			$$
 			UPDATE nat.%1$I par
 			SET scorpat = 9
 			WHERE cominterco IS TRUE
 				AND scorpat IS NULL
+				AND geomok IS TRUE
 				AND EXISTS
 					(SELECT 1
 					FROM bdnb_2024_10_a_open_data.batiment_groupe bat
 					WHERE bat.contient_fictive_geom_groupe IS FALSE
-						AND ST_Dwithin(par.lastgeompar_v, bat.geom_groupe, 1000));	
+						AND ST_Dwithin(COALESCE(par.lastgeompar_v,par.lastgeompoint_v), bat.geom_groupe, 1000));---Si pas de géométrie surface, alors prendre la géométrie ponctuelle
 						---pas de critère de date du bâtiment --> tous les bâtiments en 2021, pour prendre en compte les réserves foncières éloignées
 			$$,
 			table_cominterco
 			);
 		COMMIT;
+		
 		
 		EXECUTE format(
 			$$
@@ -459,7 +513,9 @@ LOOP
 				nature = 'Voirie'
 			FROM temp.routes_locales_cut r
 			WHERE ST_Intersects(r.geom_r,par.lastgeompar_v)
-				AND ST_Area(ST_Intersection(r.geom_r,par.lastgeompar_v)) > par.area*0.33
+				AND ST_Area(ST_Intersection(r.geom_r,par.lastgeompar_v)) > par.area*0.33;
+				
+			DROP SCHEMA temp CASCADE;
 			$$,
 			table_cominterco);
 			
@@ -493,24 +549,26 @@ LOOP
 			$$
 			UPDATE nat.%1$I
 			SET scorpat = CASE
-					WHEN com_niv BETWEEN 3 AND 4 THEN 4
 					WHEN cgrnumd LIKE '10' THEN 4
 					WHEN cgrnumd LIKE '11' THEN 3
 					WHEN cgrnumd LIKE '08' THEN 1
+					WHEN com_niv BETWEEN 3 AND 4 THEN 4
+					WHEN com_niv = 7 THEN 2
 					ELSE 2
 				END,
 				typpat = CASE
-					WHEN com_niv = 7 THEN 'Propriétaire de communaux'
-					WHEN com_niv BETWEEN 3 AND 4 THEN 'Propriétaire délégué à la maitrise foncière'
 					WHEN cgrnumd LIKE '10' THEN 'Terrain à bâtir'
 					WHEN cgrnumd LIKE '07' THEN 'Industriel et commercial'
 					WHEN cgrnumd LIKE '08' THEN 'Espace hydrographique'
 					WHEN cgrnumd LIKE '11' THEN 'Culture et loisirs'
+					WHEN com_niv BETWEEN 3 AND 4 THEN 'Propriétaire délégué à la maitrise foncière'
+					WHEN com_niv = 7 THEN 'Propriétaire de communaux'
 				END,
 				nature = CASE
 					WHEN cgrnumd LIKE '07' THEN 'Carrière'
 					WHEN cgrnumd LIKE '08' THEN 'Espace déclaré comme aquatique ou marécageux'
 					WHEN cgrnumd LIKE '11' THEN 'Espace déclaré comme jardin et terrain d agrément'
+					WHEN cgrnumd LIKE '10' THEN 'Terrain à bâtir'
 				END
 			WHERE cominterco IS TRUE
 				AND scorpat = 9
@@ -529,8 +587,10 @@ LOOP
 			$$
 			UPDATE nat.%1$I a
 			SET scorpat = CASE
-					WHEN b.source LIKE 'basol' OR b.source LIKE 'cimetiere_2021' THEN 2
-					WHEN b.source LIKE 'zai_cut_2021' AND b.nature LIKE 'Carrière' THEN 2
+					WHEN (b.source LIKE 'equipement_de_transport_2021' OR b.source LIKE 'toponymie_transport_2021')
+						AND b.nature LIKE 'Parking'
+						THEN 3
+					WHEN b.source LIKE 'terrain_de_sport_2021' OR b.source LIKE 'zai_cut_2021' THEN 3
 					WHEN (b.source LIKE 'equipement_de_transport_2021' OR b.source LIKE 'toponymie_transport_2021')
 						AND b.nature NOT LIKE 'Parking'
 						THEN 2
@@ -545,10 +605,8 @@ LOOP
 						OR b.nature LIKE 'Vestige%%'
 						OR categorie LIKE 'Gestion des eaux')
 						THEN 2
-					WHEN (b.source LIKE 'equipement_de_transport_2021' OR b.source LIKE 'toponymie_transport_2021')
-						AND b.nature LIKE 'Parking'
-						THEN 3
-					WHEN b.source LIKE 'terrain_de_sport_2021' OR b.source LIKE 'zai_cut_2021' THEN 3		
+					WHEN b.source LIKE 'zai_cut_2021' AND b.nature LIKE 'Carrière' THEN 2
+					WHEN b.source LIKE 'basol' OR b.source LIKE 'cimetiere_2021' THEN 2	
 					ELSE 9
 				END,
 				typpat = b.categorie,
@@ -599,7 +657,7 @@ LOOP
 					WHEN b.nature LIKE 'Chap%%'
 						OR b.nature LIKE 'Eg%%' THEN 'Religieux'
 					WHEN b.nature LIKE 'Tribune' THEN 'Sport'
-					WHEN b.nature LIKE 'Fo%%' THEN 'Administratif et militaire'
+					WHEN b.nature LIKE 'Fo%%' THEN 'Administratif ou militaire'
 				END,
 				nature = b.nature
 			FROM ign_topo.bati_remarquable_2021 b
@@ -630,6 +688,9 @@ LOOP
 	
 	END LOOP;
 END LOOP;
+
+RAISE NOTICE 'Tous les millésimes ont été traités';
+
 END
 
 $do$
