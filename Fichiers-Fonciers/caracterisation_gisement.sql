@@ -28,10 +28,7 @@ DECLARE
 	
 BEGIN
 
-FOREACH millesime IN ARRAY ARRAY['2021']
---FOREACH millesime IN ARRAY ARRAY['2009','2011','2012','2013']
---FOREACH millesime IN ARRAY ARRAY['2014','2015','2016']
---FOREACH millesime IN ARRAY ARRAY['2017','2018','2019','2020']
+FOREACH millesime IN ARRAY ARRAY['2009','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','2021']
 
 LOOP
         RAISE NOTICE 'Traitement du millésime % en cours',millesime;
@@ -48,11 +45,49 @@ LOOP
 	ELSE
 		surface_batiment := 'slocal';
 	END IF;
-	        
+	
+	
+	RAISE NOTICE 'Suppression-création des colonnes et indexes';
+			     
+	EXECUTE format(
+		$$
+		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS lastgeompar_nobat CASCADE;
+		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS lastgeompar_v CASCADE;
+		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS lastgeompoint_v CASCADE;
+		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS support_bati CASCADE;
+		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS support_eau CASCADE;
+		ALTER TABLE nat.%1$I ADD COLUMN lastgeompar_nobat geometry;
+		ALTER TABLE nat.%1$I ADD COLUMN lastgeompar_v geometry;
+		ALTER TABLE nat.%1$I ADD COLUMN lastgeompoint_v geometry;
+		ALTER TABLE nat.%1$I ADD COLUMN support_bati bool;
+		ALTER TABLE nat.%1$I ADD COLUMN support_eau bool;
+		
+		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS typpat CASCADE;
+		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS scorpat CASCADE;
+		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS nature CASCADE;
+		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS area CASCADE;
+		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS indice_i CASCADE;
+		ALTER TABLE nat.%1$I DROP COLUMN IF EXISTS indice_miller CASCADE;
+		ALTER TABLE nat.%1$I ADD COLUMN typpat text;
+		ALTER TABLE nat.%1$I ADD COLUMN scorpat int;
+		ALTER TABLE nat.%1$I ADD COLUMN nature text;
+		ALTER TABLE nat.%1$I ADD COLUMN area numeric;
+		ALTER TABLE nat.%1$I ADD COLUMN indice_i numeric;
+		ALTER TABLE nat.%1$I ADD COLUMN indice_miller numeric;
+		
+		CREATE INDEX %2$I ON nat.%1$I(scorpat);
+		CREATE INDEX %3$I ON nat.%1$I USING gist(lastgeompar_v);
+		CREATE INDEX %4$I ON nat.%1$I USING gist(lastgeompoint_v);
+		$$,
+		table_cominterco_nat,
+		index_scorpat,
+		index_lastgeompar_v,
+		index_lastgeompoint_v
+		);
+	COMMIT;
+        
 	FOR dep IN EXECUTE 'SELECT ccodep FROM nat.' || table_cominterco_nat || ' GROUP BY ccodep ORDER BY ccodep'		
 	LOOP
-	
-		IF LOWER(dep) NOT LIKE '2a' AND LOWER(dep) NOT LIKE '2b' AND dep::int >= 67 THEN
 	
        		RAISE NOTICE 'Département %',dep;
        		
@@ -355,16 +390,15 @@ LOOP
 			UPDATE nat.%1$I
 			SET scorpat = 1,
 				typpat = CASE
-					WHEN area < 200
-						OR (indice_miller < 0.3 AND indice_i < 2)
-						OR (indice_miller < 0.1 AND indice_i < 5)
-						OR schemrem > dcntpa*0.66
-						THEN 'Contrainte morphologique'
-					ELSE 'Contrainte géographique'
+					WHEN pente_pc_mean > 15.71 THEN 'Contrainte de pente'
+					WHEN schemrem > dcntpa*0.66 THEN 'Contrainte morphologique'
+					WHEN indice_miller < 0.1 AND indice_i < 5 THEN 'Contrainte morphologique'
+					WHEN indice_miller < 0.3 AND indice_i < 2 THEN 'Contrainte morphologique'
+					WHEN area < 200 THEN 'Contrainte de surface'
 					END,
 				nature = CASE
-					WHEN schemrem > dcntpa*0.66 THEN 'Chemin de remembrement'
 					WHEN pente_pc_mean > 15.71 THEN 'Pente forte'---seules 10%% de parcelles sont bâties sur des pentes supérieures
+					WHEN schemrem > dcntpa*0.66 THEN 'Chemin de remembrement'
 					WHEN indice_miller < 0.1 AND indice_i < 5 THEN 'Scorie type 2'
 					WHEN indice_miller < 0.3 AND indice_i < 2 THEN 'Scorie type 1'
 					WHEN area < 200 THEN 'Surface < 200 m2'
@@ -389,7 +423,6 @@ LOOP
 			SET scorpat = 9
 			WHERE cominterco IS TRUE
 				AND scorpat IS NULL
-				AND geomok IS TRUE
 				AND EXISTS
 					(SELECT 1
 					FROM bdnb_2024_10_a_open_data.batiment_groupe bat
@@ -410,6 +443,38 @@ LOOP
 				nature = 'Parcelle éloignée de tout bâti'
 			WHERE cominterco IS TRUE
 				AND scorpat IS NULL
+			$$,
+			table_cominterco
+			);
+		COMMIT;
+		
+		
+		---attribution par groupe de culture
+		RAISE NOTICE 'attribution par groupe de culture';
+		EXECUTE format(
+			$$
+			UPDATE nat.%1$I
+			SET scorpat = CASE
+					WHEN cgrnumd LIKE '07' THEN 1
+					WHEN cgrnumd LIKE '08' THEN 1
+					WHEN cgrnumd LIKE '10' THEN 3
+					WHEN cgrnumd LIKE '11' THEN 2
+				END,
+				typpat = CASE
+					WHEN cgrnumd LIKE '07' THEN 'Industriel et commercial'
+					WHEN cgrnumd LIKE '08' THEN 'Espace hydrographique'
+					WHEN cgrnumd LIKE '10' THEN 'Terrain à bâtir'
+					WHEN cgrnumd LIKE '11' THEN 'Culture et loisirs'
+				END,
+				nature = CASE
+					WHEN cgrnumd LIKE '07' THEN 'Espace déclaré comme carrière'
+					WHEN cgrnumd LIKE '08' THEN 'Espace déclaré comme aquatique ou marécageux'
+					WHEN cgrnumd LIKE '10' THEN 'Espace déclaré comme terrain à bâtir'
+					WHEN cgrnumd LIKE '11' THEN 'Espace déclaré comme jardin et terrain d agrément'
+				END
+			WHERE cominterco IS TRUE
+				AND scorpat = 9
+				AND (cgrnumd LIKE '07' OR cgrnumd LIKE '08' OR cgrnumd LIKE '10' OR cgrnumd LIKE '11')
 			$$,
 			table_cominterco
 			);
@@ -489,7 +554,7 @@ LOOP
 
 			---Qualification des parcelles municipales composées à + de 33%% de voirie
 			UPDATE nat.%1$I par
-			SET scorpat = 2,
+			SET scorpat = 1,
 				typpat = 'Transport',
 				nature = 'Voirie'
 			FROM temp.%6$I r
@@ -515,7 +580,7 @@ LOOP
 		EXECUTE format(
 			$$
 			UPDATE nat.%1$I a
-			SET scorpat = 2,
+			SET scorpat = 1,
 				typpat = 'Transport',
 				nature = 'Voie ferrée'
 			FROM ign_topo.troncon_de_voie_ferree_2021 b
@@ -531,72 +596,37 @@ LOOP
 		COMMIT;
 		
 		
-		---attribution par type de propriétaire ou de groupe de culture
-		RAISE NOTICE 'attribution par type de propriétaire ou de groupe de culture';
+		
+		---attribution d une fonction BD topo (non mutable)
+		RAISE NOTICE 'attribution d une fonction par BD topo (non mutable)';
 		EXECUTE format(
 			$$
-			UPDATE nat.%1$I
-			SET scorpat = CASE
-					WHEN cgrnumd LIKE '10' THEN 4
-					WHEN cgrnumd LIKE '11' THEN 3
-					WHEN cgrnumd LIKE '08' THEN 1
-					WHEN com_niv BETWEEN 3 AND 4 THEN 4
-					WHEN com_niv = 7 THEN 2
-					ELSE 2
-				END,
-				typpat = CASE
-					WHEN cgrnumd LIKE '10' THEN 'Terrain à bâtir'
-					WHEN cgrnumd LIKE '07' THEN 'Industriel et commercial'
-					WHEN cgrnumd LIKE '08' THEN 'Espace hydrographique'
-					WHEN cgrnumd LIKE '11' THEN 'Culture et loisirs'
-					WHEN com_niv BETWEEN 3 AND 4 THEN 'Propriétaire délégué à la maitrise foncière'
-					WHEN com_niv = 7 THEN 'Propriétaire de communaux'
-				END,
-				nature = CASE
-					WHEN cgrnumd LIKE '07' THEN 'Carrière'
-					WHEN cgrnumd LIKE '08' THEN 'Espace déclaré comme aquatique ou marécageux'
-					WHEN cgrnumd LIKE '11' THEN 'Espace déclaré comme jardin et terrain d agrément'
-					WHEN cgrnumd LIKE '10' THEN 'Terrain à bâtir'
-				END
-			WHERE cominterco IS TRUE
-				AND scorpat = 9
-				AND (com_niv = 7 OR com_niv BETWEEN 3 AND 4
-					OR cgrnumd LIKE '10' OR cgrnumd LIKE '07' OR cgrnumd LIKE '08' OR cgrnumd LIKE '11')
+			UPDATE nat.%1$I a
+			SET scorpat = 1,
+				typpat = b.categorie,
+				nature = b.nature
+			FROM ign_topo.contraintes_jointes b
+			WHERE a.cominterco IS TRUE
+				AND a.scorpat = 9
+				AND (
+					(b.source LIKE 'zai_cut_2021'
+						AND b.nature LIKE 'Carrière')
+					OR b.source LIKE 'cimetiere_2021'
+					OR b.source LIKE 'basol')
+				AND (ST_Within(a.lastgeompoint_v,b.geom_poly)
+					OR ST_Within(b.geom_point,a.lastgeompar_v));
 			$$,
 			table_cominterco
 			);
 		COMMIT;
 		
 		
-		
-		---attribution d une fonction par données spatiales exogènes
-		RAISE NOTICE 'attribution d une fonction par données spatiales exogènes';
+		---attribution d une fonction BD topo (mutable)
+		RAISE NOTICE 'attribution d une fonction par BD topo (mutable)';
 		EXECUTE format(
 			$$
 			UPDATE nat.%1$I a
-			SET scorpat = CASE
-					WHEN (b.source LIKE 'equipement_de_transport_2021' OR b.source LIKE 'toponymie_transport_2021')
-						AND b.nature LIKE 'Parking'
-						THEN 3
-					WHEN b.source LIKE 'terrain_de_sport_2021' OR b.source LIKE 'zai_cut_2021' THEN 3
-					WHEN (b.source LIKE 'equipement_de_transport_2021' OR b.source LIKE 'toponymie_transport_2021')
-						AND b.nature NOT LIKE 'Parking'
-						THEN 2
-					WHEN b.source LIKE 'aerodrome_cut_2021'
-						OR b.source LIKE 'piste_d_aerodrome_cut_2021'
-						OR b.source LIKE 'transport_par_cable_2021'
-						THEN 2
-					WHEN b.source LIKE 'zai_cut_2021' AND
-						(b.nature LIKE 'Centrale électrique'
-						OR b.nature LIKE 'Ouvrage militaire'
-						OR b.nature LIKE 'Déchèterie'
-						OR b.nature LIKE 'Vestige%%'
-						OR categorie LIKE 'Gestion des eaux')
-						THEN 2
-					WHEN b.source LIKE 'zai_cut_2021' AND b.nature LIKE 'Carrière' THEN 2
-					WHEN b.source LIKE 'basol' OR b.source LIKE 'cimetiere_2021' THEN 2	
-					ELSE 9
-				END,
+			SET scorpat = 2,
 				typpat = b.categorie,
 				nature = b.nature
 			FROM ign_topo.contraintes_jointes b
@@ -608,34 +638,14 @@ LOOP
 			table_cominterco
 			);
 		COMMIT;
-		
-		
-		---attribution par propriétaire orienté service
-		RAISE NOTICE 'attribution par propriétaire orienté service';
-		EXECUTE format(
-			$$
-			UPDATE nat.%1$I
-			SET scorpat = 3,
-				typpat = 'Propriétaire orienté service',
-				nature = CASE
-						WHEN com_niv = 5 THEN 'Divers'
-						ELSE 'HLM'
-					END
-			WHERE cominterco IS TRUE
-				AND scorpat = 9
-				AND com_niv BETWEEN 5 AND 6
-			$$,
-			table_cominterco
-			);
-		COMMIT;
-		
-		
+				
+			
 		---attribution par bâti remarquable dans la parcelle initiale
 		RAISE NOTICE 'attribution par bâti remarquable dans la parcelle initiale';
 		EXECUTE format(
 			$$
 			UPDATE nat.%1$I a
-			SET scorpat = 3,
+			SET scorpat = 2,
 				typpat =
 				CASE
 					WHEN b.nature LIKE 'Ar%%'
@@ -658,22 +668,22 @@ LOOP
 			table_cominterco
 			);
 		COMMIT;
+				
 		
-		
-		---passage en type 4 du reste
-		RAISE NOTICE 'passage en type 4 du reste';
+		---passage en type 3 du reste
+		RAISE NOTICE 'passage en type 3 du reste';
 		
 		EXECUTE format(
 			$$
 			UPDATE nat.%1$I
-			SET scorpat = 4,
+			SET scorpat = 3,
 				typpat = 'Espace non assigné'
 			WHERE scorpat = 9				
 			$$,
 			table_cominterco
 			);
 		COMMIT;
-	END IF;
+	
 	END LOOP;
 END LOOP;
 
