@@ -20,7 +20,7 @@ LOOP
 RAISE NOTICE 'Recherche idcom22, iddep22 et indexation';
 	
 	EXECUTE format(
-		\$\$
+		$$
 		
 
 		CREATE INDEX nat_%1$s_idpar_idx ON nat.%1$s(idpar);
@@ -35,19 +35,19 @@ RAISE NOTICE 'Recherche idcom22, iddep22 et indexation';
 		UPDATE nat.%1$s a
 		SET idcom22 =
 			CASE
-				WHEN idcom LIKE '132%' THEN '13055'
-				WHEN idcom LIKE '75%' THEN '75056'
-				WHEN idcom LIKE '6938%' THEN '69123'
+				WHEN idcom LIKE '132%%' THEN '13055'
+				WHEN idcom LIKE '75%%' THEN '75056'
+				WHEN idcom LIKE '6938%%' THEN '69123'
 			END,
 			iddep22 = 
 			CASE
-				WHEN idcom LIKE '132%' THEN '13'
-				WHEN idcom LIKE '75%' THEN '75'
-				WHEN idcom LIKE '6938%' THEN '69'
+				WHEN idcom LIKE '132%%' THEN '13'
+				WHEN idcom LIKE '75%%' THEN '75'
+				WHEN idcom LIKE '6938%%' THEN '69'
 			END
-		WHERE idcom LIKE '132%'
-			OR idcom LIKE '75%'
-			OR idcom LIKE '6938%';
+		WHERE idcom LIKE '132%%'
+			OR idcom LIKE '75%%'
+			OR idcom LIKE '6938%%';
 
 		UPDATE nat.%1$s a
 		SET idcom22 = b.codgeo_2022,
@@ -60,7 +60,6 @@ RAISE NOTICE 'Recherche idcom22, iddep22 et indexation';
 		CREATE INDEX nat_%1$s_idcom22_idx ON nat.%1$s(idcom22);
 		CREATE INDEX nat_%1$s_iddep22_idx ON nat.%1$s(iddep22);
 		$$,
-		--index
 		table_name_new);
 	
 	COMMIT;
