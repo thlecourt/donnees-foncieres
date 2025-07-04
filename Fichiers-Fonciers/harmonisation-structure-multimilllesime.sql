@@ -1,8 +1,7 @@
 --- Ce script sert à donner aux millésimes des Fichiers Fonciers antérieurs à 2018 la même structure que les millésimes suivants :  1 schéma "national" + 1 schéma "départemental" par millésime
 --- NB : cet exemple fonctionne pour le millésime 2016. Remplacer toutes les mentions de '16' par le millésime souhaité
 
---- REPARATION DES GEOMETRIES PONCTUELLES DE LA TABLE DES PARCELLES DU DEPARTEMENT 95 MILLESIME 2016
---- /!\ Cette étape n'est nécessaire que pour le millésime 2016 et le département 95
+--- REPARATION DES GEOMETRIES PONCTUELLES DE LA TABLE DES PARCELLES DU DEPARTEMENT 95
 ALTER TABLE ff_2016.d95_2016_pnb10_parcelle
 ADD COLUMN geomloc2 geometry(MultiPoint);
 UPDATE ff_2016.d95_2016_pnb10_parcelle
