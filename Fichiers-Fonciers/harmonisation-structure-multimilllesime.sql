@@ -1,7 +1,8 @@
 --- Ce script sert à donner aux millésimes des Fichiers Fonciers antérieurs à 2018 la même structure que les millésimes suivants :  1 schéma "national" + 1 schéma "départemental" par millésime
 --- NB : cet exemple fonctionne pour le millésime 2016. Remplacer toutes les mentions de '16' par le millésime souhaité
 
---- REPARATION DES GEOMETRIES PONCTUELLES DE LA TABLE DES PARCELLES DU DEPARTEMENT 95
+--- REPARATION DES GEOMETRIES DE LA TABLE DES PARCELLES DU DEPARTEMENT 95
+--- /!\ Uniquement pour le millésime 2016
 ALTER TABLE ff_2016.d95_2016_pnb10_parcelle
 ADD COLUMN geomloc2 geometry(MultiPoint);
 UPDATE ff_2016.d95_2016_pnb10_parcelle
@@ -12,6 +13,17 @@ ALTER TABLE ff_2016.d95_2016_pnb10_parcelle
 RENAME COLUMN geomloc2 TO geomloc;
 ALTER TABLE ff_2016.d95_2016_pnb10_parcelle
 ALTER COLUMN geomloc TYPE geometry(MultiPoint,2154);
+
+ALTER TABLE ff_2016.d95_2016_pnb10_parcelle
+ADD COLUMN geompar2 geometry(MultiPolygon);
+UPDATE ff_2016.d95_2016_pnb10_parcelle
+SET geompar2 = ST_Multi(geomloc);
+ALTER TABLE ff_2016.d95_2016_pnb10_parcelle
+DROP COLUMN geompar;
+ALTER TABLE ff_2016.d95_2016_pnb10_parcelle
+RENAME COLUMN geompar2 TO geompar;
+ALTER TABLE ff_2016.d95_2016_pnb10_parcelle
+ALTER COLUMN geompar TYPE geometry(MultiPolygon,2154);
 
 
 --- CREATION DES SCHEMAS FINAUX
