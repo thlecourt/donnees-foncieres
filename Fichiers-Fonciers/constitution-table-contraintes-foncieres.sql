@@ -1,5 +1,5 @@
 -------------
----Ce script crée une table unique des contraintes à la mobilisattion du foncier
+---Ce script crée une table unique des contraintes à la mobilisattion du foncier à partir de BASOL (pollut) et de la BD Topo
 ------------
 
 DROP TABLE IF EXISTS ign_topo.contraintes_jointes CASCADE;
