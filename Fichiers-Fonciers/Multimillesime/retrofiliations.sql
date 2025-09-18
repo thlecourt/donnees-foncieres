@@ -1,18 +1,6 @@
 ### Ce script, en l'état, reconstitue la filiation des gisements fonciers appartenant au bloc communal au 1ier janiver 2016 dans l'aire d'attraction des villes, sur 5 millésimes (2011 <- 2016)
 ### m1 correspond au millésime de départ (2016) et m6 au millésime le plus ancien (2011)
 
-
-#!/bin/bash
-
-# Configuration de la connexion à la base de données
-HOST=""
-USER=""
-DATABASE=""
-PORT=""
-
-# Requête SQL à exécuter
-QUERY="
-
 DO
 \$do\$
 declare
@@ -2795,8 +2783,3 @@ EXECUTE format(
 
 END
 \$do\$
-
-
-"
-
-psql -h $HOST -p $PORT -d $DATABASE -U $USER -c "$QUERY" > /dev/stdout 2> /dev/stderr
