@@ -2175,9 +2175,6 @@ LOOP
 							\$\$,
 							schema_de_reference, table_de_reference,
 							schema_de_reference, table_de_reference);
-
-					END IF;
-					COMMIT;
 				END IF;
 				COMMIT;
 			END LOOP;
@@ -2494,6 +2491,8 @@ LOOP
 								\$\$,
 								schema_de_reference, table_de_reference,
 								schema_de_reference, table_de_reference);
+					END IF;
+					COMMIT;
 								
 				END LOOP;
 				COMMIT;
