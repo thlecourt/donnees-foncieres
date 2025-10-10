@@ -14,7 +14,7 @@ ADD COLUMN communaux boolean;
 ---Affectation des cas simples
 UPDATE ff.proprietaires_multimillesime
 SET public = 'True'
-WHERE cod_prop SIMILAR TO 'P%|F2%|F4%|F5b|F7a|F7c|F7g|A1g|A2c|A3%|A4%|R2%|R4%|R5b|E2%|S1c|S1d|S2%|Z4%|L1c|L3a|M2a';
+WHERE cod_prop SIMILAR TO 'P%|F1a|F2%|F4%|F5b|F7a|F7c|F7g|A1g|A2c|A3%|A4%|R2%|R4%|R5b|E2%|S1c|S1d|S2%|Z4%|L1c|L3a|M2a';
 
 UPDATE ff.proprietaires_multimillesime
 SET cominterco = 'True'
@@ -38,7 +38,7 @@ OR (cod_prop SIMILAR TO 'A1%|A2%|G2%' AND SPLIT_PART(nom_adresse,'|',1) SIMILAR 
 
 
 --------------------------------
------LOGEMENT SOCIAL PUBLIC-----
+---------LOGEMENT SOCIAL--------
 --------------------------------
 
 UPDATE ff.proprietaires_multimillesime prop
@@ -55,13 +55,6 @@ FROM prop_mm.liste_oph o
 WHERE prop.cod_prop LIKE 'F1a' AND public IS NOT TRUE
 	AND to_tsvector('french', SPLIT_PART(prop.nom_adresse, '|', 1)) @@ plainto_tsquery('french', o.nom)
 	AND LEFT(SPLIT_PART(prop.nom_adresse, '|', 5),5) = o.cp;
-
-UPDATE ff.proprietaires_multimillesime
-SET public = 'True'
-WHERE cod_prop LIKE 'F1a' AND public IS NOT TRUE
-	AND SPLIT_PART(nom_adresse, '|', 1) SIMILAR TO 'OPH %|% OPH|% OPH %|OPHLM %|% OPHLM|% OPHLM %|%OP HLM%|%O P HLM%|%OPAC%|% PUBLIC|
-		% PUBLIC %|% PUBLIQUE|% PUBLIQUE %|%MUNICIP%|%OFFICE%DEPARTEMENT%|%COMMUNAL%|%COMMUNE%|%COMMUNAUTE%AGGLO%|%COMMUNAUTE%URBAIN%'
-	AND SPLIT_PART(nom_adresse, '|', 1) NOT SIMILAR TO 'ESH %|% ESH|% ESH %|%ENTREPRISE%|%COOP%|SCIC %|% SCIC|% SCIC %';
 
 UPDATE ff.proprietaires_multimillesime
 SET cominterco = 'True'
