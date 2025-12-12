@@ -1,3 +1,3 @@
 # donnees-foncieres
 
-Scripts and data from Thibault Lecourt's PhD thesis : https://cv.hal.science/thibault-lecourt 
+Scripts et données issus du travail de thèse de Thibault Lecourt : https://cv.hal.science/thibault-lecourt 
