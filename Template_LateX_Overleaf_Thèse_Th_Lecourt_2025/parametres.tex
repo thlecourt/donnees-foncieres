@@ -1,0 +1,232 @@
+\documentclass[12pt,a4paper,twoside,openright]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{tgtermes}
+\usepackage{ragged2e} 
+\usepackage[french]{babel}
+\usepackage{microtype}
+%\usepackage{kantlipsum}
+\PassOptionsToPackage{hyphens}{url}
+\usepackage{hyperref}
+\usepackage{epigraph}
+\usepackage{eso-pic,graphicx}
+\usepackage{amsmath}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{lscape}
+\usepackage{appendix}
+\usepackage[table,xcdraw]{xcolor, soul}
+\usepackage{titletoc}
+\sethlcolor{red}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{shorttoc}
+\usepackage{lipsum}
+
+%Pour gérer un problème de caractère dans la bibliographie
+\usepackage{newunicodechar}
+\newunicodechar{ᵉ}{\textsuperscript{e}}
+
+%Pour forcer un retour à la ligne au milieu d'un mot
+\newcommand\hyp{\penalty0\hskip0pt\relax}
+
+%Citations en italiques avec guillemets français
+\usepackage[babel=true]{csquotes}
+\let\oldenquote\enquote
+\renewcommand{\enquote}[1]{\oldenquote{\textit{#1}}}
+\newenvironment{itblock}{\begin{quote}\itshape}{\end{quote}}
+\SetBlockEnvironment{itblock}
+\renewcommand{\mkcitation}[1]{\unskip\ \textnormal{(#1)}}
+
+
+%Pour les infobulles
+%Voir https://www.latex-fr.net/3_composition/texte/paragraphes/encadrer_du_texte
+\usepackage{awesomebox}
+\usepackage[most]{tcolorbox}
+\newcommand{\githubcode}[2]{%
+    \begin{awesomebox}[purple]{3pt}{\faCode[regular]}{purple}{\small \textbf{#1}
+    
+    \scriptsize \url{#2}}
+    \end{awesomebox}
+}
+
+
+\tcbset{before upper={\parindent=20pt}} % définit un alinéa globalement pour toutes les boîtes tcolorbox
+
+%Pour les sources des images et tableaux
+\usepackage{copyrightbox}
+\makeatletter
+\renewcommand{\CRB@setcopyrightfont}{%
+    \justifying
+    \usefont{T1}{tgtermes}{n}{n}
+    \footnotesize
+    \color{black!66}
+    \selectfont
+    }
+\makeatother
+
+
+%Gestion du format de page
+\usepackage[
+  a4paper,
+  twoside,
+  %openright,
+  inner=2.5cm,
+  outer=2cm,
+  top=1.5cm,
+  bottom=1.5cm,
+  includeheadfoot,
+  headheight=10pt,
+  headsep=20pt,
+  footskip=30pt
+]{geometry}
+%Surface occupée par le texte : 165 mm × 245 mm
+
+\setlength {\marginparwidth }{2cm}
+
+%Interdire les lignes orphelines
+\widowpenalty = 99999
+
+%interligne
+\renewcommand{\baselinestretch}{1.15}
+
+%Gestion des interlignes entre paragraphes et indentation*
+\usepackage[skip=6pt plus1pt, indent=20pt]{parskip}
+
+%Gestion des notes de relecture (\todoLCE)
+\usepackage[colorinlistoftodos,prependcaption]{todonotes}
+\newcommand{\todoTL}[1]{\todo[color=green!40, author=Thibault, inline]{#1}}
+\newcommand{\todoDJ}[1]{\todo[color=blue!40, author=Didier, inline]{#1}}
+\newcommand{\todoLCE}[1]{\todo[color=yellow!40, author=Laure, inline]{#1}}
+
+\usepackage{enumitem} 
+
+%formatage de la bibliographie
+\usepackage[
+    backend=biber
+    ,useprefix=false
+    %,style=chicago-authordate
+    ,style=authoryear-icomp
+    ,sorting=nyt,
+    %,giveninits=true,
+    %uniquename=init,
+    ,maxcitenames=2
+    ,maxbibnames=9
+    %,url=false
+    %sortcites,
+    %backref=false
+]{biblatex}
+
+\makeatletter
+\AtBeginDocument{\toggletrue{blx@useprefix}}
+\AtBeginBibliography{\togglefalse{blx@useprefix}}
+\makeatother
+
+%nettoyage de la bibliographie
+\AtEveryBibitem{%
+  \clearfield{note}%
+  \clearfield{month}%
+  \clearlist{language}%
+  \clearfield{isbn}%
+  \clearfield{issn}%
+  %\clearfield{url}%
+  %\DeclareFieldFormat{urldate}{}
+}
+
+\renewbibmacro*{doi+eprint+url}{%
+  \begingroup
+  \footnotesize
+  \printfield{doi}%
+  \newunit\newblock
+  \printfield{eprint}%
+  \newunit\newblock
+  \ifboolexpr{
+    test {\ifentrytype{online}}
+    or test {\ifentrytype{software}}
+    or test {\ifentrytype{report}}
+    or test {\ifentrytype{misc}}
+  }
+  {%
+    \printfield{url}%
+    \setunit*{\addspace}%
+    \printurldate
+  }
+  {}%
+  \endgroup
+}
+
+
+
+
+\addbibresource{references.bib}
+%\addbibresource{ref2.bib}
+
+
+%On numérote les sections jusqu'à 2 (Partie + Chapitre + Section + sous-section)
+\setcounter{secnumdepth}{2}
+\titlecontents{chapter}[0em] {\addvspace{0.5em}\bfseries}{Chapitre~\thecontentslabel \hspace{1em}}{}{\hfill\contentspage}
+
+\newcommand{\annexetoc}{
+  \titlecontents{chapter}[0em]
+    {\addvspace{0.5em}\bfseries}
+    {Annexe~\thecontentslabel\hspace{1em}}
+    {}
+    {}
+}
+
+
+%Pastilles
+\usepackage{tikz}
+\definecolor{COM_GEN}{HTML}{08519c}%
+\definecolor{PUB}{HTML}{8dd3c7}%
+\newcommand{\pastille}[1]{%
+  \tikz[baseline=-0.5ex]{
+    \node[circle, fill=#1, inner sep=4pt, outer sep=0] {};
+  }%
+}
+
+
+% Définition du point médian : $\cdot$
+\def\cdt{\kern-0.5pt\ensuremath\cdot\kern-0.5pt}
+
+% Diminue la fréquence de l'hyphenation
+\microtypesetup{activate=true}
+
+
+\renewcommand{\thefigure}{\thechapter.\arabic{figure}}
+
+
+%pas d'entete et pied de page en début de chapitre
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \renewcommand{\headrulewidth}{0pt}%
+  \fancyfoot[LE,RO]{\footnotesize \thepage}%
+}
+
+
+%Formatage des entêtes
+\makeatletter
+\renewcommand{\sectionmark}[1]{%
+  \MakeUppercase{\markright{\footnotesize \thesection\quad #1}}%
+}
+\makeatother
+
+
+%subsubsection en italique dans la table des matières
+\makeatletter
+\renewcommand{\l@subsubsection}[2]{%
+  \ifnum \c@tocdepth >2 % vérifie qu'on affiche les subsubsections
+    \addpenalty{\@secpenalty}%
+    \vskip 1.0ex plus 0.2ex minus 0.2ex % espace vertical
+    \setlength\@tempdima{3.8em} % indentation (ajuster si besoin)
+    \begingroup
+      \parindent \z@ \rightskip \@pnumwidth
+      \parfillskip -\@pnumwidth
+      \leavevmode \itshape % italique ici
+      \advance\leftskip\@tempdima
+      \hskip -\leftskip
+      #1\nobreak\hfil \nobreak\hb@xt@\@pnumwidth{\hss #2}\par
+    \endgroup
+  \fi}
+\makeatother
